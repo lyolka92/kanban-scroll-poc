@@ -1,0 +1,515 @@
+/* You can add global styles to this file, and also import other style files */
+
+// ─── Reset & Base ───────────────────────────────────────────────────────────
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-bg: #f0f2f5;
+  --color-surface: #ffffff;
+  --color-border: #e0e4ea;
+  --color-text: #1a1d23;
+  --color-text-secondary: #6b7280;
+  --color-primary: #4f46e5;
+  --color-primary-light: #eef2ff;
+  --color-cat: #ec4899;
+  --color-cat-light: #fdf2f8;
+  --color-dog: #f59e0b;
+  --color-dog-light: #fffbeb;
+  --color-kitten: #a78bfa;
+  --color-cat-status: #ec4899;
+  --color-old-cat: #be185d;
+  --color-puppy: #34d399;
+  --color-dog-status: #f59e0b;
+  --color-old-dog: #b45309;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --col-width: 260px;
+  --gap: 12px;
+}
+
+html,
+body {
+  height: 100%;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+// ─── Board Shell ────────────────────────────────────────────────────────────
+.board-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+
+  &__header {
+    flex-shrink: 0;
+    padding: 12px 20px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  &__title {
+    font-size: 18px;
+    font-weight: 700;
+    white-space: nowrap;
+    color: var(--color-text);
+  }
+
+  &__content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; // required for flex child to shrink
+  }
+}
+
+// ─── Approach Toggle ────────────────────────────────────────────────────────
+.approach-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  &__label {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+  }
+
+  &__buttons {
+    display: flex;
+    gap: 6px;
+  }
+
+  &__btn {
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--color-border);
+    background: var(--color-surface);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    transition: all 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.4;
+
+    &--active {
+      border-color: var(--color-primary);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    &:hover:not(&--active) {
+      border-color: #9ca3af;
+      background: #f9fafb;
+    }
+  }
+
+  &__hint {
+    font-size: 10px;
+    font-weight: 400;
+    opacity: 0.7;
+  }
+
+  &__desc {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    max-width: 480px;
+    line-height: 1.5;
+
+    strong {
+      color: var(--color-text);
+    }
+  }
+}
+
+// ─── Board Layout (shared by both approaches) ────────────────────────────────
+.board {
+  display: flex;
+  gap: var(--gap);
+  padding: var(--gap);
+  align-items: flex-start;
+
+  // Approach A: each column scrolls independently, board fills height
+  &--column-scroll {
+    height: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    align-items: stretch;
+  }
+
+  // Approach B (hybrid): fixed columns, each with CDK virtual scroll.
+  // Board fills available height; columns stretch to fill it.
+  // Wheel events on the board sync-scroll all viewports.
+  &--shared-scroll {
+    height: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    align-items: stretch;
+
+    .col {
+      height: 100%;
+      min-height: 0;
+    }
+
+    // Hide individual viewport scrollbars — the shared scrollbar drives all
+    .col__viewport {
+      scrollbar-width: none;
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+  }
+
+  // Single shared scrollbar that drives all column viewports
+  &__scrollbar {
+    flex: 0 0 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    // The element only shows the native scrollbar; no visible width beyond it
+    width: 14px;
+    min-width: 14px;
+  }
+
+  &__loader {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-text);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 100;
+    opacity: 0.9;
+  }
+}
+
+// ─── Column ──────────────────────────────────────────────────────────────────
+.col {
+  flex: 0 0 var(--col-width);
+  width: var(--col-width);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+
+  // In Approach A: column fills the board's full height so virtual scroll works
+  .board--column-scroll & {
+    height: 100%;
+    min-height: 0;
+  }
+
+  &__header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--color-border);
+    background: #fafbfc;
+  }
+
+  &__label {
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  &__count {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    background: var(--color-border);
+    padding: 2px 7px;
+    border-radius: 10px;
+  }
+
+  // Approach A viewport — takes remaining space in fixed-height column
+  &__viewport {
+    flex: 1;
+    min-height: 0; // required for flex child to shrink
+  }
+
+  // Approach B list — no scroll, grows with content
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  // Virtual scroll items: wrapper height = itemHeight (set via [style.height.px]).
+  // Card takes natural height; uniform 8px gap comes from the padding-bottom.
+  &__item-wrapper {
+    margin: 8px;
+    box-sizing: border-box;
+  }
+
+  &__loader {
+    text-align: center;
+    padding: 8px;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+  }
+
+  &__end {
+    text-align: center;
+    padding: 8px;
+    font-size: 10px;
+    color: var(--color-text-secondary);
+    border-top: 1px dashed var(--color-border);
+  }
+}
+
+// ─── Cards ───────────────────────────────────────────────────────────────────
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: box-shadow 0.15s ease;
+
+  &:hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  &__image {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    display: block;
+    background: var(--color-bg);
+  }
+
+  &__body {
+    padding: 8px 10px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  &__name {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+
+    &--cat {
+      background: #fdf2f8;
+      color: var(--color-cat);
+    }
+    &--dog {
+      background: #fffbeb;
+      color: var(--color-dog);
+    }
+  }
+
+  &__row {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+
+    &--notes {
+      flex-direction: column;
+      gap: 1px;
+
+      .card__value {
+        font-size: 11px;
+        color: var(--color-text-secondary);
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+    }
+  }
+
+  &__label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    min-width: 44px;
+    flex-shrink: 0;
+  }
+
+  &__value {
+    font-size: 12px;
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // Size variants by status
+  &--kitten,
+  &--puppy {
+    // small — image + name + age only
+  }
+
+  &--cat,
+  &--dog {
+    // medium — adds breed / weight / color
+  }
+
+  &--old-cat,
+  &--old-dog {
+    // large — adds health + needs
+    border-left: 3px solid #f87171;
+  }
+}
+
+// ─── Angular component host element display/height chain ─────────────────────
+// Custom elements default to display:inline which breaks flex/height chains.
+app-root {
+  display: block;
+  height: 100%;
+}
+
+app-board {
+  display: block;
+  height: 100%;
+}
+
+app-column-scroll-board {
+  display: block;
+  height: 100%;
+}
+
+// In Approach A each column host must also fill height so CDK viewport gets px height
+app-column-scroll-column {
+  display: block;
+  height: 100%;
+}
+
+app-shared-scroll-board {
+  display: block;
+  height: 100%;
+}
+
+// In Approach B (hybrid): column host fills height like Approach A
+app-shared-scroll-column {
+  display: block;
+  height: 100%;
+}
+
+// ─── Card Skeleton ────────────────────────────────────────────────────────────
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.card-skeleton {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  padding: 8px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2px;
+  }
+
+  &__line {
+    border-radius: 4px;
+    background: linear-gradient(90deg, #ededf0 25%, #dfe1e7 50%, #ededf0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+
+    &--name {
+      height: 13px;
+      width: 52%;
+    }
+    &--badge {
+      height: 18px;
+      width: 24%;
+      border-radius: 9px;
+    }
+    &--row {
+      height: 9px;
+      width: 100%;
+    }
+    &--short {
+      width: 68%;
+    }
+  }
+}
+
+// ─── Column label colors ──────────────────────────────────────────────────────
+app-column-scroll-column,
+app-shared-scroll-column {
+  &:nth-child(1) .col__label {
+    color: var(--color-kitten);
+  }
+  &:nth-child(2) .col__label {
+    color: var(--color-cat-status);
+  }
+  &:nth-child(3) .col__label {
+    color: var(--color-old-cat);
+  }
+  &:nth-child(4) .col__label {
+    color: var(--color-puppy);
+  }
+  &:nth-child(5) .col__label {
+    color: var(--color-dog-status);
+  }
+  &:nth-child(6) .col__label {
+    color: var(--color-old-dog);
+  }
+}
