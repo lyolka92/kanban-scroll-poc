@@ -250,9 +250,21 @@ body {
   &__viewport {
     flex: 1;
     min-height: 0; // required for flex child to shrink
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
   }
 
   // Approach B list — no scroll, grows with content
+
+  &__viewport::-webkit-scrollbar {
+    width: 8px;
+  }
+
   &__list {
     display: flex;
     flex-direction: column;
